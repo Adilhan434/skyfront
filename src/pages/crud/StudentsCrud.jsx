@@ -35,8 +35,8 @@ const StudentsPanel = () => {
         const fetchPrograms = async () => {
             try {
                 // Используем endpoint из StudentCreateView
-                const response = await api.get('accounts/create-student/') 
-                setPrograms(response.data.programs || [])
+                const response = await api.get('programs/api/') 
+                setPrograms(response.data || [])
             } catch (error) {
                 console.error('Error fetching programs:', error)
                 // Fallback: попробуем загрузить из старого endpoint

@@ -1,5 +1,5 @@
 import React from 'react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import api from '../../api.js'
 
 const LecturersPanel = () => {
@@ -66,21 +66,20 @@ const LecturersPanel = () => {
         }
     }
 
-     useEffect(() => {
-        const fetchLecturers = async () => {
-            try {
-                // Используем endpoint из StudentCreateView
-                const response = await api.get('accounts/create-staff/') 
-                setTeachersList(response.data.teachers || [])
-            } catch (error) {
-                console.error('Error fetching teachers:', error)              
-            } finally {
-                setLoading(false)
+            useEffect(() => {
+            const fetchLecturers = async () => {
+                try {
+                    const response = await api.get('accounts/create-staff/') 
+                    // Обрабатываем оба варианта структуры ответа
+                    setTeachersList(response.data.lecturers || response.data || [])
+                } catch (error) {
+                    console.error('Error fetching teachers:', error)              
+                } finally {
+                    setLoading(false)
+                }
             }
-        }
-        fetchLecturers()
-    }, [])
-
+            fetchLecturers()
+        }, [])
     return (
         <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Создание преподавателя</h2>
@@ -216,6 +215,104 @@ const LecturersPanel = () => {
                     </button>
                 </div>
             </form>
+
+           <div className="max-w-7xl mx-auto p-6">
+                {loading ? (
+                    <div className="text-center text-lg text-gray-600 py-10">
+                        Загрузка преподавателей...
+                    </div>
+                ) : (
+                    <div className="space-y-6">
+                        {/* Заголовок с количеством */}
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-2xl font-bold text-gray-900">
+                                Преподаватели
+                            </h2>
+                            <span className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full font-medium">
+                                Всего: {teachersList.count || teachersList.length}
+                            </span>
+                        </div>
+
+                        {/* Таблица преподавателей */}
+                        <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                ФИО
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Логин
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Email
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Телефон
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Пол
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Дата регистрации
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Роль
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                   <tbody className="bg-white divide-y divide-gray-200">
+                                    {(teachersList.lecturers || teachersList).map(teacher => (
+                                        <tr 
+                                            key={teacher.id} 
+                                            className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+                                            onClick={() => window.location.href = '/admin/teacher/' + teacher.id}
+                                        >
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-medium text-gray-900">
+                                                    {teacher.full_name}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-500">
+                                                    {teacher.username}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-600">
+                                                    {teacher.email}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-600">
+                                                    {teacher.phone || '-'}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-600">
+                                                    {teacher.gender === 'M' ? 'Мужской' : teacher.gender === 'F' ? 'Женский' : '-'}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-600">
+                                                    {new Date(teacher.date_joined).toLocaleDateString('ru-RU')}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                                    {teacher.user_role}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     )
 }
