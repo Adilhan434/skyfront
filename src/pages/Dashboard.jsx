@@ -15,6 +15,11 @@ const Dashboard = () => {
     admin: "bg-gradient-to-br from-purple-500 to-pink-600 text-white"
   }
 
+  const CrudOperationsAdmin = [
+    {operation:'create lecturers', link:'/admin/create-lecturers'},   
+    {operation:'create students', link:'/admin/create-students'},   
+  ]
+
   // Иконки для разных ролей
   const roleIcons = {
     student: "🎓",
@@ -171,22 +176,14 @@ const Dashboard = () => {
         <div className="max-w-4xl mx-auto mt-8">
           <h3 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 text-center">
-              <div className="text-2xl mb-2">📚</div>
-              <div className="font-medium text-gray-700">Courses</div>
+            {CrudOperationsAdmin.map((action, index) => (
+            <button key={index} className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 text-center">
+              <a href={action.link} className="flex flex-col items-center">
+                <div className="text-2xl mb-2">📚</div>
+                <div className="font-medium text-gray-700">{action.operation}</div>
+              </a>
             </button>
-            <button className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 text-center">
-              <div className="text-2xl mb-2">📊</div>
-              <div className="font-medium text-gray-700">Progress</div>
-            </button>
-            <button className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 text-center">
-              <div className="text-2xl mb-2">🔔</div>
-              <div className="font-medium text-gray-700">Notifications</div>
-            </button>
-            <button className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 text-center">
-              <div className="text-2xl mb-2">⚙️</div>
-              <div className="font-medium text-gray-700">Settings</div>
-            </button>
+            ))}
           </div>
         </div>
       </div>

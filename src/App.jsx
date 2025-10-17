@@ -5,6 +5,8 @@ import Login from './pages/auth/login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import NotFound from "./pages/NotFound"
 import ProtectedRoute from "./componenets/ProtectedRoute"
+import CreateLecturers from './pages/crud/CreateLecturers.jsx';
+import CreateStudent from './pages/crud/CreateStudent.jsx';
 
 function Logout() {
   localStorage.clear();
@@ -25,6 +27,18 @@ function App() {
           }
         />
         <Route path="/login" element={<Login />} />
+        <Route path='/admin/create-lecturers' element={
+          <ProtectedRoute>
+            <CreateLecturers />
+          </ProtectedRoute>
+
+        } />
+        <Route path='/admin/create-students' element={
+          <ProtectedRoute>
+            <CreateStudent />
+          </ProtectedRoute>
+
+        } />
         <Route path="/logout" element={<Logout />} />
         <Route path="*" element={<NotFound />}></Route>
       </Routes>
