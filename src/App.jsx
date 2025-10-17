@@ -1,12 +1,12 @@
 // App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/auth/login.jsx';
+import Login from './pages/auth/Login.jsx'
 import Dashboard from './pages/Dashboard.jsx';
 import NotFound from "./pages/NotFound"
 import ProtectedRoute from "./componenets/ProtectedRoute"
-import CreateLecturers from './pages/crud/CreateLecturers.jsx';
-import CreateStudent from './pages/crud/CreateStudent.jsx';
+import LecturersPanel from './pages/crud/LecturersCrud.jsx';
+import StudentsPanel from './pages/crud/StudentsCrud.jsx';
 
 function Logout() {
   localStorage.clear();
@@ -29,13 +29,13 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path='/admin/create-lecturers' element={
           <ProtectedRoute>
-            <CreateLecturers />
+            <LecturersPanel />
           </ProtectedRoute>
 
         } />
         <Route path='/admin/create-students' element={
           <ProtectedRoute>
-            <CreateStudent />
+            <StudentsPanel />
           </ProtectedRoute>
 
         } />

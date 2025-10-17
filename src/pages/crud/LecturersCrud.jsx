@@ -2,7 +2,7 @@ import React from 'react'
 import { useState } from 'react'
 import api from '../../api.js'
 
-const CreateLecturers = () => {
+const LecturersPanel = () => {
     const [formData, setFormData] = useState({
         username: '',
         first_name: '',
@@ -13,6 +13,7 @@ const CreateLecturers = () => {
         email: '',
 
     })
+    const [teachersList, setTeachersList] = useState([])
     
     const [message, setMessage] = useState('')
     const [error, setError] = useState('')
@@ -64,6 +65,21 @@ const CreateLecturers = () => {
             setLoading(false)
         }
     }
+
+     useEffect(() => {
+        const fetchLecturers = async () => {
+            try {
+                // Используем endpoint из StudentCreateView
+                const response = await api.get('accounts/create-staff/') 
+                setTeachersList(response.data.teachers || [])
+            } catch (error) {
+                console.error('Error fetching teachers:', error)              
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchLecturers()
+    }, [])
 
     return (
         <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
@@ -204,4 +220,4 @@ const CreateLecturers = () => {
     )
 }
 
-export default CreateLecturers
+export default LecturersPanel
