@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api';
 
-const TeacherEdit = () => {
+const TeacherEdit = ({role}) => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
@@ -85,7 +85,10 @@ const TeacherEdit = () => {
     return (
         <div className="max-w-2xl mx-auto">
             <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Редактирование учителя</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Редактирование {
+                    role == 'teacher' ? "учителя" :
+                    role == 'student' ? "студента" : 
+                    "родителя"}</h1>
                 <p className="text-gray-600">ID: {id}</p>
             </div>
 

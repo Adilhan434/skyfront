@@ -4,7 +4,7 @@ import api from '../../api.js'
 
 const LecturersPanel = () => {
     const [formData, setFormData] = useState({
-        username: '',
+
         first_name: '',
         last_name: '',
         gender: '',
@@ -40,7 +40,6 @@ const LecturersPanel = () => {
             
             // Очистка формы после успешного создания
             setFormData({
-                username: '',
                 first_name: '',
                 last_name: '',
                 gender: '',
@@ -81,7 +80,7 @@ const LecturersPanel = () => {
             fetchLecturers()
         }, [])
     return (
-        <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
+        <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-md">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Создание преподавателя</h2>
             
             {message && (
@@ -96,21 +95,11 @@ const LecturersPanel = () => {
                 </div>
             )}
 
+            <a href="/"><p>вернуться в главное меню</p></a>
+
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Имя пользователя *
-                        </label>
-                        <input
-                            type="text"
-                            name="username"
-                            value={formData.username}
-                            onChange={handleChange}
-                            required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
+                   
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">

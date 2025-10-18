@@ -19,6 +19,7 @@ const StudentsPanel = () => {
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const [loadingPrograms, setLoadingPrograms] = useState(true)
+    const [students, setStudents] = useState([])
 
     const levels = [
         { value: 'Bachelor', label: 'Бакалавриат' },
@@ -40,17 +41,28 @@ const StudentsPanel = () => {
             } catch (error) {
                 console.error('Error fetching programs:', error)
                 // Fallback: попробуем загрузить из старого endpoint
-                try {
-                    const fallbackResponse = await api.get('api/programs/')
-                    setPrograms(fallbackResponse.data)
-                } catch (fallbackError) {
-                    setError('Не удалось загрузить список программ')
-                }
             } finally {
                 setLoadingPrograms(false)
             }
         }
         fetchPrograms()
+    }, [])
+
+
+    useEffect(() => {
+        const fetchStudents = async() => {
+            setLoading(true)
+            try{
+                const response = await api.get('accounts/api/students/')
+                setStudents(response.data)
+                console.log
+            }catch(error){
+                console.error('Error fetching students:', error)
+            }finally{
+                setLoading(false)
+            }
+        }
+        fetchStudents()
     }, [])
 
    
@@ -135,6 +147,7 @@ const StudentsPanel = () => {
 
     return (
         <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
+            <a href="/"><p>вернуться в главное меню</p></a>
             <h2 className="text-2xl font-bold mb-6">Создание студента</h2>
             
             {message && (
@@ -319,6 +332,53 @@ const StudentsPanel = () => {
                     </button>
                 </div>
             </form>
+                        <table>
+                             <tbody>
+                                  {(students.students || students).map(student => (
+                                        <tr 
+                                            key={student.id} 
+                                            className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+                                            onClick={() => window.location.href = '/admin/student/' + student.id}
+                                        >
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-medium text-gray-900">
+                                                    {student.full_name}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-500">
+                                                    {student.username}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-600">
+                                                    {student.email}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-600">
+                                                    {student.phone || '-'}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-600">
+                                                    {student.gender === 'M' ? 'Мужской' : student.gender === 'F' ? 'Женский' : '-'}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-600">
+                                                    {new Date(student.date_joined).toLocaleDateString('ru-RU')}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                                    {student.user_role}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
         </div>
     )
 }

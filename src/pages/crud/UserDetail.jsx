@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../api';
 
-const TeacherDetail = () => {
+const UserDetail = ({role}) => {
     const { id } = useParams();
     const [teacher, setTeacher] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -76,7 +76,11 @@ const TeacherDetail = () => {
         <div className="max-w-4xl mx-auto">
             {/* Заголовок и кнопка назад */}
             <div className="mb-6 flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-900">Информация об учителе</h1>
+                <h1 className="text-2xl font-bold text-gray-900">  Информация о {
+                    role == 'teacher' ? "учителе" :
+                    role == 'student' ? "студенте" : 
+                    "родителе"
+                }</h1>
                 <Link 
                     to="/admin/create-lecturers" 
                     className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
@@ -159,7 +163,9 @@ const TeacherDetail = () => {
             {/* Кнопки действий */}
             <div className="mt-6 flex justify-end space-x-4">
                 <Link
-                    to={`/admin/teacher/${teacher.id}/edit`}
+                    to={`/admin/${role == 'teacher' ? teacher : 
+                        role == 'student' ? 'student' : 'parent'
+                    }/${teacher.id}/edit`}
                     className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                 >
                     Редактировать
@@ -175,4 +181,4 @@ const TeacherDetail = () => {
     );
 };
 
-export default TeacherDetail;
+export default UserDetail;

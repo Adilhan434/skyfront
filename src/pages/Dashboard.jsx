@@ -18,6 +18,8 @@ const Dashboard = () => {
   const CrudOperationsAdmin = [
     {operation:'create lecturers', link:'/admin/create-lecturers'},   
     {operation:'create students', link:'/admin/create-students'},   
+    {operation:'manage sessions', link:'/admin/sessions'},
+    {operation:'manage courses/programs/accolations', link:'/admin/courses'},
   ]
 
   // Иконки для разных ролей

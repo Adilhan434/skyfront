@@ -7,8 +7,10 @@ import NotFound from "./pages/NotFound"
 import ProtectedRoute from "./componenets/ProtectedRoute"
 import LecturersPanel from './pages/crud/LecturersCrud.jsx';
 import StudentsPanel from './pages/crud/StudentsCrud.jsx';
-import TeacherEdit from './pages/crud/TeacherEdit.jsx';
-import TeacherDetail from './pages/crud/TeacherDetail.jsx';
+import UserEdit from './pages/crud/UserEdit.jsx';
+import UserDetail from './pages/crud/UserDetail.jsx';
+import Courses from './pages/crud/Courses.jsx';
+import ManageSessions from './pages/crud/ManageSessions.jsx';
 
 
 function Logout() {
@@ -44,16 +46,42 @@ function App() {
         } />
        <Route path='/admin/teacher/:id' element={
           <ProtectedRoute>
-            <TeacherDetail />
+            <UserDetail  role='teacher'/>
           </ProtectedRoute>
 
         } />
         <Route path='/admin/teacher/:id/edit' element={
           <ProtectedRoute>
-            <TeacherEdit />
+            <UserEdit role='teacher'/>
           </ProtectedRoute>
 
         } />
+        <Route path='/admin/student/:id' element={
+          <ProtectedRoute>
+            <UserDetail role='student' />
+          </ProtectedRoute>
+
+        } />
+        <Route path='/admin/student/:id/edit' element={
+          <ProtectedRoute>
+            <UserEdit role='student'/>
+          </ProtectedRoute>
+
+        } />
+
+        <Route path='/admin/sessions' element={
+          <ProtectedRoute>
+            <ManageSessions />
+          </ProtectedRoute>
+
+        } />
+        <Route path='/admin/courses' element={
+          <ProtectedRoute>
+            <Courses />
+          </ProtectedRoute>
+
+        } />
+        
         <Route path="/logout" element={<Logout />} />
         <Route path="*" element={<NotFound />}></Route>
       </Routes>
