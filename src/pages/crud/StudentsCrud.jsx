@@ -3,7 +3,7 @@ import api from '../../api'
 
 const StudentsPanel = () => {
     const [formData, setFormData] = useState({
-        username: '',
+        username: 'ddddd',
         first_name: '',
         last_name: '',
         gender: '',
@@ -11,14 +11,17 @@ const StudentsPanel = () => {
         phone: '',
         email: '',
         level: '',
-        program: ''
+        program: '',
+        group: '' // Добавляем поле группы
     })
     
     const [programs, setPrograms] = useState([])
+    const [groups, setGroups] = useState([]) // Добавляем состояние для групп
     const [message, setMessage] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const [loadingPrograms, setLoadingPrograms] = useState(true)
+    const [loadingGroups, setLoadingGroups] = useState(true) // Добавляем состояние загрузки групп
     const [students, setStudents] = useState([])
 
     const levels = [
@@ -31,16 +34,14 @@ const StudentsPanel = () => {
         { value: 'F', label: 'Женский' },
     ]
 
-    // Загрузка списка программ из правильного endpoint
+    // Загрузка списка программ
     useEffect(() => {
         const fetchPrograms = async () => {
             try {
-                // Используем endpoint из StudentCreateView
                 const response = await api.get('programs/api/') 
                 setPrograms(response.data || [])
             } catch (error) {
                 console.error('Error fetching programs:', error)
-                // Fallback: попробуем загрузить из старого endpoint
             } finally {
                 setLoadingPrograms(false)
             }
@@ -48,6 +49,20 @@ const StudentsPanel = () => {
         fetchPrograms()
     }, [])
 
+    // Загрузка списка групп
+    useEffect(() => {
+        const fetchGroups = async () => {
+            try {
+                const response = await api.get('accounts/api/groups/') 
+                setGroups(response.data || [])
+            } catch (error) {
+                console.error('Error fetching groups:', error)
+            } finally {
+                setLoadingGroups(false)
+            }
+        }
+        fetchGroups()
+    }, [])
 
     useEffect(() => {
         const fetchStudents = async() => {
@@ -55,7 +70,6 @@ const StudentsPanel = () => {
             try{
                 const response = await api.get('accounts/api/students/')
                 setStudents(response.data)
-                console.log
             }catch(error){
                 console.error('Error fetching students:', error)
             }finally{
@@ -64,8 +78,6 @@ const StudentsPanel = () => {
         }
         fetchStudents()
     }, [])
-
-   
 
     const handleChange = (e) => {
         const { name, value } = e.target
@@ -81,7 +93,7 @@ const StudentsPanel = () => {
         setMessage('')
         setError('')
 
-        const requiredFields = ['username', 'first_name', 'last_name', 'gender', 'email', 'level', 'program']
+        const requiredFields = ['username', 'first_name', 'last_name', 'gender', 'email', 'level', 'program', 'group']
         const missingFields = requiredFields.filter(field => !formData[field])
         
         if (missingFields.length > 0) {
@@ -100,7 +112,8 @@ const StudentsPanel = () => {
                 phone: formData.phone,
                 email: formData.email,
                 level: formData.level,
-                program: parseInt(formData.program)
+                program: parseInt(formData.program),
+                group: parseInt(formData.group) // Добавляем группу в данные для отправки
             }
 
             const response = await api.post('accounts/create-student/', submitData)
@@ -108,7 +121,7 @@ const StudentsPanel = () => {
             
             // Очистка формы
             setFormData({
-                username: '',
+                username: 'ddd',
                 first_name: '',
                 last_name: '',
                 gender: '',
@@ -116,7 +129,8 @@ const StudentsPanel = () => {
                 phone: '',
                 email: '',
                 level: '',
-                program: ''
+                program: '',
+                group: ''
             })
         } catch (error) {
             console.error('Error creating student:', error)
@@ -165,19 +179,7 @@ const StudentsPanel = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Логин */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Логин *
-                        </label>
-                        <input
-                            type="text"
-                            name="username"
-                            value={formData.username}
-                            onChange={handleChange}
-                            required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
+                  
 
                     {/* Email */}
                     <div>
@@ -300,7 +302,34 @@ const StudentsPanel = () => {
                                 <option value="">Выберите программу</option>
                                 {programs.map(program => (
                                     <option key={program.id} value={program.id}>
-                                        {program.title || program.name} {/* Поддержка обоих полей */}
+                                        {program.title || program.name}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
+
+                    {/* Группа */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Группа *
+                        </label>
+                        {loadingGroups ? (
+                            <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100">
+                                Загрузка групп...
+                            </div>
+                        ) : (
+                            <select
+                                name="group"
+                                value={formData.group}
+                                onChange={handleChange}
+                                required
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="">Выберите группу</option>
+                                {groups.map(group => (
+                                    <option key={group.id} value={group.id}>
+                                        {group.name || group.title} {/* Поддержка разных названий полей */}
                                     </option>
                                 ))}
                             </select>
@@ -332,53 +361,83 @@ const StudentsPanel = () => {
                     </button>
                 </div>
             </form>
-                        <table>
-                             <tbody>
-                                  {(students.students || students).map(student => (
-                                        <tr 
-                                            key={student.id} 
-                                            className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
-                                            onClick={() => window.location.href = '/admin/student/' + student.id}
-                                        >
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {student.full_name}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-500">
-                                                    {student.username}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-600">
-                                                    {student.email}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-600">
-                                                    {student.phone || '-'}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-600">
-                                                    {student.gender === 'M' ? 'Мужской' : student.gender === 'F' ? 'Женский' : '-'}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-600">
-                                                    {new Date(student.date_joined).toLocaleDateString('ru-RU')}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                                    {student.user_role}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+
+            {/* Таблица студентов */}
+            <div className="mt-8">
+                <h3 className="text-xl font-bold mb-4">Список студентов</h3>
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                ФИО
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Логин
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Email
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Телефон
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Пол
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Дата регистрации
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Роль
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        {(students.students || students).map(student => (
+                            <tr 
+                                key={student.id} 
+                                className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+                                onClick={() => window.location.href = '/admin/student/' + student.id}
+                            >
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm font-medium text-gray-900">
+                                        {student.full_name}
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm text-gray-500">
+                                        {student.username}
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm text-gray-600">
+                                        {student.email}
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm text-gray-600">
+                                        {student.phone || '-'}
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm text-gray-600">
+                                        {student.gender === 'M' ? 'Мужской' : student.gender === 'F' ? 'Женский' : '-'}
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm text-gray-600">
+                                        {new Date(student.date_joined).toLocaleDateString('ru-RU')}
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                        {student.user_role}
+                                    </span>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     )
 }

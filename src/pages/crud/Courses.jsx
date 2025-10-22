@@ -49,7 +49,6 @@ function CourseAllocations() {
     try {
       const res = await api.get("programs/course-allocations/");
       console.log("Loaded allocations:", res.data);
-      console.log("Loaded allocations courses details:", res.data[0].courses_details[0].title);
       setAllocations(res.data || []);
     } catch (e) {
       console.error(e);
@@ -244,6 +243,7 @@ function CourseAllocations() {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lecturer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Groups</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Courses</th>
                 <th className="px-6 py-3">Actions</th>
               </tr>
