@@ -4,17 +4,15 @@ import api from '../../api.js'
 
 const LecturersPanel = () => {
     const [formData, setFormData] = useState({
-
+        username: 'default_user', // Стандартное значение
         first_name: '',
         last_name: '',
         gender: '',
         address: '',
         phone: '',
         email: '',
-
     })
     const [teachersList, setTeachersList] = useState([])
-    
     const [message, setMessage] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
@@ -34,12 +32,19 @@ const LecturersPanel = () => {
         setError('')
 
         try {
-            const response = await api.post('accounts/create-staff/', formData)
+            // Всегда отправляем стандартный username
+            const submitData = {
+                ...formData,
+                username: 'default_user' // Гарантируем отправку стандартного значения
+            }
+
+            const response = await api.post('accounts/create-staff/', submitData)
             setMessage('Преподаватель успешно создан!')
             console.log('Lecturer created successfully:', response.data)
             
             // Очистка формы после успешного создания
             setFormData({
+                username: 'default_user', // Сохраняем стандартное значение
                 first_name: '',
                 last_name: '',
                 gender: '',
@@ -65,20 +70,22 @@ const LecturersPanel = () => {
         }
     }
 
-            useEffect(() => {
-            const fetchLecturers = async () => {
-                try {
-                    const response = await api.get('accounts/create-staff/') 
-                    // Обрабатываем оба варианта структуры ответа
-                    setTeachersList(response.data.lecturers || response.data || [])
-                } catch (error) {
-                    console.error('Error fetching teachers:', error)              
-                } finally {
-                    setLoading(false)
-                }
+    useEffect(() => {
+        const fetchLecturers = async () => {
+            try {
+                const response = await api.get('accounts/create-staff/') 
+                // Обрабатываем оба варианта структуры ответа
+                setTeachersList(response.data.lecturers || response.data || [])
+                console.log('Fetched teachers:', response.data)
+            } catch (error) {
+                console.error('Error fetching teachers:', error)              
+            } finally {
+                setLoading(false)
             }
-            fetchLecturers()
-        }, [])
+        }
+        fetchLecturers()
+    }, [])
+
     return (
         <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-md">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Создание преподавателя</h2>
@@ -98,9 +105,14 @@ const LecturersPanel = () => {
             <a href="/"><p>вернуться в главное меню</p></a>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   
+                {/* Скрытое поле для username */}
+                <input 
+                    type="hidden"
+                    name="username"
+                    value={formData.username}
+                />
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Email *
@@ -190,8 +202,6 @@ const LecturersPanel = () => {
                     />
                 </div>
 
-                
-
                 <div className="flex justify-end pt-4">
                     <button
                         type="submit"
@@ -205,14 +215,14 @@ const LecturersPanel = () => {
                 </div>
             </form>
 
-           <div className="max-w-7xl mx-auto p-6">
+            {/* Остальной код с таблицей преподавателей остается без изменений */}
+            <div className="max-w-7xl mx-auto p-6">
                 {loading ? (
                     <div className="text-center text-lg text-gray-600 py-10">
                         Загрузка преподавателей...
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        {/* Заголовок с количеством */}
                         <div className="flex justify-between items-center">
                             <h2 className="text-2xl font-bold text-gray-900">
                                 Преподаватели
@@ -222,7 +232,6 @@ const LecturersPanel = () => {
                             </span>
                         </div>
 
-                        {/* Таблица преподавателей */}
                         <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200">
@@ -251,51 +260,51 @@ const LecturersPanel = () => {
                                             </th>
                                         </tr>
                                     </thead>
-                                   <tbody className="bg-white divide-y divide-gray-200">
-                                    {(teachersList.lecturers || teachersList).map(teacher => (
-                                        <tr 
-                                            key={teacher.id} 
-                                            className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
-                                            onClick={() => window.location.href = '/admin/teacher/' + teacher.id}
-                                        >
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {teacher.full_name}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-500">
-                                                    {teacher.username}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-600">
-                                                    {teacher.email}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-600">
-                                                    {teacher.phone || '-'}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-600">
-                                                    {teacher.gender === 'M' ? 'Мужской' : teacher.gender === 'F' ? 'Женский' : '-'}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-600">
-                                                    {new Date(teacher.date_joined).toLocaleDateString('ru-RU')}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                                    {teacher.user_role}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {(teachersList.lecturers || teachersList).map(teacher => (
+                                            <tr 
+                                                key={teacher.id} 
+                                                className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+                                                onClick={() => window.location.href = '/admin/teacher/' + teacher.id}
+                                            >
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                        {teacher.full_name}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-500">
+                                                        {teacher.username}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-600">
+                                                        {teacher.email}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-600">
+                                                        {teacher.phone || '-'}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-600">
+                                                        {teacher.gender === 'M' ? 'Мужской' : teacher.gender === 'F' ? 'Женский' : '-'}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-600">
+                                                        {new Date(teacher.date_joined).toLocaleDateString('ru-RU')}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                                        {teacher.user_role}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
                                 </table>
                             </div>
                         </div>
