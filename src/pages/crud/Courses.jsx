@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
 import api from '../../api';
-
 
 // Simple modal component
 function Modal({ open, title, onClose, children }) {
@@ -20,14 +20,14 @@ function Modal({ open, title, onClose, children }) {
   );
 }
 
-
 function CourseAllocations() {
   const [allocations, setAllocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lecturers, setLecturers] = useState([]);
   const [availableCourses, setAvailableCourses] = useState([]);
-
+  const [groups, setGroups] = useState([]);
+  const [semesters, setSemesters] = useState([]);
 
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -37,10 +37,37 @@ function CourseAllocations() {
   const [selected, setSelected] = useState(null); // selected allocation for edit/detail
 
   // form state for create/edit
-  const emptyForm = { id: null, name: "", lecturer: null, courses: [] };
+  const emptyForm = { id: null, name: "", lecturer: null, courses: [], group: null, semester: null };
   const [form, setForm] = useState(emptyForm);
 
-  
+  const fetchGroups = async () => {
+    try{
+      const res = await api.get("accounts/api/groups/")
+      setGroups(res.data || [])
+    } catch(e){
+      console.error("Ошибка загрузки групп:", e);
+    }
+  }
+
+  const fetchSemesters = async () => {
+  try {
+    const res = await api.get("/api/semesters/");
+    // Обрабатываем разные форматы ответа
+    if (Array.isArray(res.data)) {
+      setSemesters(res.data);
+    } else if (res.data && Array.isArray(res.data.semesters)) {
+      setSemesters(res.data.semesters);
+    } else if (res.data && typeof res.data === 'object') {
+      // Если это объект с данными, преобразуем в массив
+      setSemesters([res.data]);
+    } else {
+      setSemesters([]);
+    }
+  } catch (e) {
+    console.error("Ошибка загрузки семестров:", e);
+    setSemesters([]);
+  }
+}
 
   // helper to load list
   const fetchList = async () => {
@@ -61,7 +88,8 @@ function CourseAllocations() {
   useEffect(() => {
     fetchList();
   }, []);
-    const fetchLecturers = async () => {
+
+  const fetchLecturers = async () => {
     try {
       const res = await api.get("accounts/api/lecturers/"); 
       setLecturers(res.data || []);
@@ -70,7 +98,7 @@ function CourseAllocations() {
     }
   };
 
-   const fetchCourses = async () => {
+  const fetchCourses = async () => {
     try {
       const res = await api.get("programs/api/course/");
       setAvailableCourses(res.data || []);
@@ -83,18 +111,21 @@ function CourseAllocations() {
     fetchList();
     fetchLecturers();
     fetchCourses();
+    fetchGroups();
+    fetchSemesters();
   }, []);
 
-
-
   // create
-   const handleCreate = async (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
     try {
       const payload = {
         lecturer: form.lecturer,
         courses: form.courses,
+        group: form.group,
+        semester: form.semester // уже отправляется по ID, так как form.semester содержит ID выбранного семестра
       };
+      console.log("Creating allocation with payload:", payload); // для отладки
       const res = await api.post("programs/course-allocations/", payload);
       setAllocations((s) => [res.data, ...s]);
       setIsCreateOpen(false);
@@ -104,6 +135,7 @@ function CourseAllocations() {
       alert("Ошибка при создании. Проверьте поля и авторизацию.");
     }
   };
+
 
   // retrieve single
   const openDetail = async (id) => {
@@ -126,6 +158,8 @@ function CourseAllocations() {
         name: res.data.name || "",
         lecturer: res.data.lecturer || null,
         courses: res.data.courses || [],
+        group: res.data.group || null,
+        semester: res.data.semester || null
       });
       setIsEditOpen(true);
     } catch (err) {
@@ -136,18 +170,25 @@ function CourseAllocations() {
 
   // update (PUT)
   const handleUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = { name: form.name, lecturer: form.lecturer, courses: form.courses };
-      const res = await api.put(`/programs/course-allocations/${form.id}/`, payload);
-      setAllocations((s) => s.map((it) => (it.id === res.data.id ? res.data : it)));
-      setIsEditOpen(false);
-      setForm(emptyForm);
-    } catch (err) {
-      console.error(err);
-      alert("Ошибка при обновлении");
-    }
-  };
+  e.preventDefault();
+  try {
+    const payload = { 
+      name: form.name, 
+      lecturer: form.lecturer, 
+      courses: form.courses, 
+      group: form.group,
+      semester: form.semester // уже отправляется по ID
+    };
+    console.log("Updating allocation with payload:", payload); // для отладки
+    const res = await api.put(`/programs/course-allocations/${form.id}/`, payload);
+    setAllocations((s) => s.map((it) => (it.id === res.data.id ? res.data : it)));
+    setIsEditOpen(false);
+    setForm(emptyForm);
+  } catch (err) {
+    console.error(err);
+    alert("Ошибка при обновлении");
+  }
+};
 
   // partial update (PATCH) — example: change name only
   const handlePatchName = async (id, newName) => {
@@ -210,7 +251,8 @@ function CourseAllocations() {
     });
   };
 
-  return (
+
+return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">Course Allocations</h2>
@@ -244,6 +286,7 @@ function CourseAllocations() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lecturer</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Groups</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Semester</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Courses</th>
                 <th className="px-6 py-3">Actions</th>
               </tr>
@@ -254,6 +297,12 @@ function CourseAllocations() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{a.id}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {a.lecturer_name ? a.lecturer_name : "-"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {a.group_name ? a.group_name : "-"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {a.semester_name || a.semester || "-"}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
                     {a.courses_details?.length > 0 ? (
@@ -301,7 +350,7 @@ function CourseAllocations() {
       )}
 
       {/* Create Modal */}
-       <Modal open={isCreateOpen} title="Create Course Allocation" onClose={() => setIsCreateOpen(false)}>
+      <Modal open={isCreateOpen} title="Create Course Allocation" onClose={() => setIsCreateOpen(false)}>
         <form onSubmit={handleCreate} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">Name</label>
@@ -313,6 +362,37 @@ function CourseAllocations() {
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Group</label>
+            <select 
+              value={form.group || ""} 
+              onChange={onChange("group")} 
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            >
+              <option value="">Select Group</option>
+              {groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Semester</label>
+            <select 
+              value={form.semester || ""} 
+              onChange={onChange("semester")} 
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            >
+              <option value="">Select Semester</option>
+              {Array.isArray(semesters) && semesters.map((semester) => (
+                <option key={semester.id} value={semester.id}>
+                  {semester.semester || semester.name} {/* Используем поле semester или name */}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Lecturer</label>
             <select 
@@ -358,105 +438,134 @@ function CourseAllocations() {
       </Modal>
 
       {/* Edit Modal */}
-<Modal open={isEditOpen} title="Edit Course Allocation" onClose={() => setIsEditOpen(false)}>
-  <form onSubmit={handleUpdate} className="space-y-4">
-    <div>
-      <label className="block text-sm font-medium text-gray-700">Name</label>
-      <input 
-        value={form.name} 
-        onChange={onChange("name")} 
-        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" 
-        required 
-      />
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700">Lecturer</label>
-      <select 
-        value={form.lecturer || ""} 
-        onChange={onChange("lecturer")} 
-        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
-      >
-        <option value="">Select Lecturer</option>
-        {lecturers.map((lecturer) => (
-          <option key={lecturer.id} value={lecturer.id}>
-            {lecturer.full_name} 
-          </option>
-        ))}
-      </select>
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700">Courses</label>
-      <div className="mt-2 max-h-40 overflow-y-auto border rounded-md p-2">
-        {availableCourses.map((course) => (
-          <div key={course.id} className="flex items-center mb-2">
-            <input
-              type="checkbox"
-              id={`edit-course-${course.id}`}
-              checked={form.courses.includes(course.id)}
-              onChange={() => toggleCourseInForm(course.id)}
-              className="mr-2"
+      <Modal open={isEditOpen} title="Edit Course Allocation" onClose={() => setIsEditOpen(false)}>
+        <form onSubmit={handleUpdate} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Name</label>
+            <input 
+              value={form.name} 
+              onChange={onChange("name")} 
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" 
+              required 
             />
-            <label htmlFor={`edit-course-${course.id}`} className="text-sm">
-              {course.code} - {course.title}
-            </label>
           </div>
-        ))}
-      </div>
-      <p className="text-xs text-gray-400 mt-1">Selected: {form.courses.length} courses</p>
-    </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Group</label>
+            <select 
+              value={form.group || ""} 
+              onChange={onChange("group")} 
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
+            >
+              <option value="">Select Group</option>
+              {groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Semester</label>
+            <select 
+              value={form.semester || ""} 
+              onChange={onChange("semester")} 
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
+            >
+              <option value="">Select Semester</option>
+              {Array.isArray(semesters) && semesters.map((semester) => (
+                <option key={semester.id} value={semester.id}>
+                  {semester.semester || semester.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Lecturer</label>
+            <select 
+              value={form.lecturer || ""} 
+              onChange={onChange("lecturer")} 
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
+            >
+              <option value="">Select Lecturer</option>
+              {lecturers.map((lecturer) => (
+                <option key={lecturer.id} value={lecturer.id}>
+                  {lecturer.full_name} 
+                </option>
+              ))}
+            </select>
+          </div>
 
-    <div className="flex justify-between items-center pt-4 border-t">
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            const add = prompt("Course IDs to add (comma separated):");
-            if (!add) return;
-            const ids = add.split(",").map((s) => Number(s.trim())).filter(Boolean);
-            handleAddCourses(form.id, ids);
-          }}
-          className="px-3 py-2 rounded bg-green-100 hover:bg-green-200 text-sm"
-        >
-          + Add courses by ID
-        </button>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Courses</label>
+            <div className="mt-2 max-h-40 overflow-y-auto border rounded-md p-2">
+              {availableCourses.map((course) => (
+                <div key={course.id} className="flex items-center mb-2">
+                  <input
+                    type="checkbox"
+                    id={`edit-course-${course.id}`}
+                    checked={form.courses.includes(course.id)}
+                    onChange={() => toggleCourseInForm(course.id)}
+                    className="mr-2"
+                  />
+                  <label htmlFor={`edit-course-${course.id}`} className="text-sm">
+                    {course.code} - {course.title}
+                  </label>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Selected: {form.courses.length} courses</p>
+          </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            const rem = prompt("Course IDs to remove (comma separated):");
-            if (!rem) return;
-            const ids = rem.split(",").map((s) => Number(s.trim())).filter(Boolean);
-            handleRemoveCourses(form.id, ids);
-          }}
-          className="px-3 py-2 rounded bg-red-100 hover:bg-red-200 text-sm"
-        >
-          - Remove courses by ID
-        </button>
-      </div>
+          <div className="flex justify-between items-center pt-4 border-t">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const add = prompt("Course IDs to add (comma separated):");
+                  if (!add) return;
+                  const ids = add.split(",").map((s) => Number(s.trim())).filter(Boolean);
+                  handleAddCourses(form.id, ids);
+                }}
+                className="px-3 py-2 rounded bg-green-100 hover:bg-green-200 text-sm"
+              >
+                + Add courses by ID
+              </button>
 
-      <div className="flex gap-2">
-        <button 
-          type="button" 
-          onClick={() => {
-            setIsEditOpen(false);
-            setForm(emptyForm);
-          }} 
-          className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200"
-        >
-          Cancel
-        </button>
-        <button 
-          type="submit" 
-          className="px-4 py-2 rounded bg-yellow-500 hover:bg-yellow-600 text-white"
-        >
-          Save Changes
-        </button>
-      </div>
-    </div>
-  </form>
-</Modal>
+              <button
+                type="button"
+                onClick={() => {
+                  const rem = prompt("Course IDs to remove (comma separated):");
+                  if (!rem) return;
+                  const ids = rem.split(",").map((s) => Number(s.trim())).filter(Boolean);
+                  handleRemoveCourses(form.id, ids);
+                }}
+                className="px-3 py-2 rounded bg-red-100 hover:bg-red-200 text-sm"
+              >
+                - Remove courses by ID
+              </button>
+            </div>
+
+            <div className="flex gap-2">
+              <button 
+                type="button" 
+                onClick={() => {
+                  setIsEditOpen(false);
+                  setForm(emptyForm);
+                }} 
+                className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="px-4 py-2 rounded bg-yellow-500 hover:bg-yellow-600 text-white"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </form>
+      </Modal>
 
       {/* Detail Modal */}
       <Modal open={isDetailOpen} title={`Allocation #${selected?.id || ""}`} onClose={() => setIsDetailOpen(false)}>
@@ -466,13 +575,19 @@ function CourseAllocations() {
               <strong>Name:</strong> {selected.name}
             </div>
             <div>
-              <strong>Lecturer:</strong> {selected.lecturer?.name || selected.lecturer || "-"}
+              <strong>Lecturer:</strong> {selected.lecturer_name || "-"}
+            </div>
+            <div>
+              <strong>Group:</strong> {selected.group_name || "-"}
+            </div>
+            <div>
+              <strong>Semester:</strong> {selected.semester_name || "-"}
             </div>
             <div>
               <strong>Courses:</strong>
               <ul className="list-disc pl-6">
-                {(selected.courses || []).map((c) => (
-                  <li key={c.id || c}>{c.title || c}</li>
+                {(selected.courses_details || []).map((c) => (
+                  <li key={c.id}>{c.title} ({c.code})</li>
                 ))}
               </ul>
             </div>
@@ -511,8 +626,6 @@ function CourseAllocations() {
     </div>
   );
 }
-
-
 
 const Courses = () => {
     const [courses, setCourses] = useState([]);
@@ -608,7 +721,7 @@ const Courses = () => {
         }
     };
 
-    // Courses API functions
+    // Courses API functions - ОБНОВЛЕНО: используем ID вместо slug
     const fetchCourses = async () => {
         try {
             const url = searchQuery ? `/programs/api/course/?q=${searchQuery}` : '/programs/api/course/';
@@ -619,9 +732,10 @@ const Courses = () => {
         }
     };
 
-    const courseDetails = async (courseSlug) => {
+    // ОБНОВЛЕНО: используем course ID вместо slug
+    const courseDetails = async (courseId) => {
         try {
-            const response = await api.get(`/programs/api/course/${courseSlug}/`);
+            const response = await api.get(`/programs/api/course/${courseId}/`);
             alert(`Course Details:\nTitle: ${response.data.title}\nCode: ${response.data.code}\nCredits: ${response.data.credit}`);
             console.log('Course Details:', response.data);
         } catch (error) {
@@ -664,6 +778,7 @@ const Courses = () => {
         }
     };
 
+    // ОБНОВЛЕНО: используем course ID вместо slug
     const handleEditCourse = async (e) => {
         e.preventDefault();
         try {
@@ -676,9 +791,9 @@ const Courses = () => {
             
             console.log('Updating course data:', courseData);
             
-            const response = await api.put(`/programs/api/course/${editingCourse.slug}/`, courseData);
+            const response = await api.put(`/programs/api/course/${editingCourse.id}/`, courseData);
             setCourses(courses.map(course => 
-                course.slug === editingCourse.slug ? response.data : course
+                course.id === editingCourse.id ? response.data : course
             ));
             setEditingCourse(null);
             alert('Course updated successfully!');
@@ -689,11 +804,12 @@ const Courses = () => {
         }
     };
 
-    const handleDeleteCourse = async (courseSlug, courseTitle) => {
+    // ОБНОВЛЕНО: используем course ID вместо slug
+    const handleDeleteCourse = async (courseId, courseTitle) => {
         if (window.confirm(`Are you sure you want to delete the course "${courseTitle}"?`)) {
             try {
-                await api.delete(`/programs/api/course/${courseSlug}/`);
-                setCourses(courses.filter(course => course.slug !== courseSlug));
+                await api.delete(`/programs/api/course/${courseId}/`);
+                setCourses(courses.filter(course => course.id !== courseId));
                 alert('Course deleted successfully!');
             } catch (error) {
                 console.error('Error deleting course:', error);
@@ -932,7 +1048,7 @@ const Courses = () => {
                                         type="checkbox"
                                         checked={newCourse.is_elective}
                                         onChange={(e) => setNewCourse({...newCourse, is_elective: e.target.checked})}
-                                        style={{ marginRight: '8px' }}
+                                        style={{ marginRight: '10px' }}
                                     />
                                     Is Elective Course
                                 </label>
@@ -950,231 +1066,245 @@ const Courses = () => {
                 </div>
             )}
 
-            {/* Programs List */}
-            {activeTab === 'programs' && (
-                <div>
-                    <h2>Programs</h2>
-                    <ul>
-                        {programs.map(program => (
-                            <li key={program.id} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #eee' }}>
-                                {editingProgram && editingProgram.id === program.id ? (
-                                    <form onSubmit={handleEditProgram}>
-                                        <div style={{ marginBottom: '10px' }}>
-                                            <input
-                                                type="text"
-                                                value={editingProgram.title}
-                                                onChange={(e) => setEditingProgram({...editingProgram, title: e.target.value})}
-                                                required
-                                                style={{ width: '100%', padding: '5px' }}
-                                            />
-                                        </div>
-                                        <div style={{ marginBottom: '10px' }}>
-                                            <textarea
-                                                value={editingProgram.summary || ''}
-                                                onChange={(e) => setEditingProgram({...editingProgram, summary: e.target.value})}
-                                                style={{ width: '100%', padding: '5px', minHeight: '60px' }}
-                                            />
-                                        </div>
-                                        <button type="submit">Save</button>
-                                        <button 
-                                            type="button" 
-                                            onClick={cancelEditing}
-                                            style={{ marginLeft: '10px' }}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </form>
-                                ) : (
-                                    <div>
-                                        <strong>{program.title}</strong>
-                                        {program.summary && (
-                                            <p style={{ margin: '5px 0', fontSize: '0.9em', color: '#666' }}>
-                                                {program.summary}
-                                            </p>
-                                        )}
-                                        <div style={{ marginTop: '5px' }}>
-                                            <button onClick={() => programDetails(program.id)}>Details</button>
-                                            <button 
-                                                onClick={() => startEditingProgram(program)}
-                                                style={{ marginLeft: '5px' }}
-                                            >
-                                                Edit
-                                            </button>
-                                            <button 
-                                                onClick={() => handleDeleteProgram(program.id)}
-                                                style={{ marginLeft: '5px', backgroundColor: '#ff4444', color: 'white' }}
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
-                    {programs.length === 0 && <p>No programs found.</p>}
+            {/* Edit Form */}
+            {editingProgram && (
+                <div style={{ border: '1px solid #ccc', padding: '20px', marginBottom: '20px' }}>
+                    <h3>Edit Program</h3>
+                    <form onSubmit={handleEditProgram}>
+                        <div style={{ marginBottom: '10px' }}>
+                            <input
+                                type="text"
+                                placeholder="Title"
+                                value={editingProgram.title}
+                                onChange={(e) => setEditingProgram({...editingProgram, title: e.target.value})}
+                                required
+                                style={{ width: '100%', padding: '8px' }}
+                            />
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <textarea
+                                placeholder="Summary"
+                                value={editingProgram.summary}
+                                onChange={(e) => setEditingProgram({...editingProgram, summary: e.target.value})}
+                                style={{ width: '100%', padding: '8px', minHeight: '80px' }}
+                            />
+                        </div>
+                        <button type="submit">Update Program</button>
+                        <button 
+                            type="button" 
+                            onClick={cancelEditing}
+                            style={{ marginLeft: '10px' }}
+                        >
+                            Cancel
+                        </button>
+                    </form>
                 </div>
             )}
 
-            {/* Courses List */}
-            {activeTab === 'courses' && (
+            {editingCourse && (
+                <div style={{ border: '1px solid #ccc', padding: '20px', marginBottom: '20px' }}>
+                    <h3>Edit Course</h3>
+                    <form onSubmit={handleEditCourse}>
+                        <div style={{ marginBottom: '10px' }}>
+                            <input
+                                type="text"
+                                placeholder="Course Title"
+                                value={editingCourse.title}
+                                onChange={(e) => setEditingCourse({...editingCourse, title: e.target.value})}
+                                required
+                                style={{ width: '100%', padding: '8px' }}
+                            />
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <input
+                                type="text"
+                                placeholder="Course Code"
+                                value={editingCourse.code}
+                                onChange={(e) => setEditingCourse({...editingCourse, code: e.target.value})}
+                                required
+                                style={{ width: '100%', padding: '8px' }}
+                            />
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <input
+                                type="number"
+                                placeholder="Credits"
+                                value={editingCourse.credit}
+                                onChange={(e) => setEditingCourse({...editingCourse, credit: parseInt(e.target.value) || 0})}
+                                required
+                                min="0"
+                                style={{ width: '100%', padding: '8px' }}
+                            />
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <textarea
+                                placeholder="Course Summary"
+                                value={editingCourse.summary}
+                                onChange={(e) => setEditingCourse({...editingCourse, summary: e.target.value})}
+                                style={{ width: '100%', padding: '8px', minHeight: '60px' }}
+                            />
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <select
+                                value={editingCourse.program}
+                                onChange={(e) => setEditingCourse({...editingCourse, program: e.target.value})}
+                                required
+                                style={{ width: '100%', padding: '8px' }}
+                            >
+                                <option value="">Select Program</option>
+                                {programs.map(program => (
+                                    <option key={program.id} value={program.id}>
+                                        {program.title}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <select
+                                value={editingCourse.level}
+                                onChange={(e) => setEditingCourse({...editingCourse, level: e.target.value})}
+                                required
+                                style={{ width: '100%', padding: '8px' }}
+                            >
+                                <option value="">Select Level</option>
+                                {levelOptions.map(level => (
+                                    <option key={level} value={level}>
+                                        {level}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <select
+                                value={editingCourse.year}
+                                onChange={(e) => setEditingCourse({...editingCourse, year: parseInt(e.target.value)})}
+                                required
+                                style={{ width: '100%', padding: '8px' }}
+                            >
+                                <option value="">Select Year</option>
+                                {yearOptions.map(year => (
+                                    <option key={year} value={year}>
+                                        {year}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <select
+                                value={editingCourse.semester}
+                                onChange={(e) => setEditingCourse({...editingCourse, semester: e.target.value})}
+                                required
+                                style={{ width: '100%', padding: '8px' }}
+                            >
+                                <option value="">Select Semester</option>
+                                {semesterOptions.map(semester => (
+                                    <option key={semester} value={semester}>
+                                        {semester}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    checked={editingCourse.is_elective}
+                                    onChange={(e) => setEditingCourse({...editingCourse, is_elective: e.target.checked})}
+                                    style={{ marginRight: '10px' }}
+                                />
+                                Is Elective Course
+                            </label>
+                        </div>
+                        <button type="submit">Update Course</button>
+                        <button 
+                            type="button" 
+                            onClick={cancelEditing}
+                            style={{ marginLeft: '10px' }}
+                        >
+                            Cancel
+                        </button>
+                    </form>
+                </div>
+            )}
+
+            {/* Display Programs or Courses */}
+            {activeTab === 'programs' ? (
+                <div>
+                    <h2>Programs</h2>
+                    {programs.length === 0 ? (
+                        <p>No programs found.</p>
+                    ) : (
+                        <ul>
+                            {programs.map(program => (
+                                <li key={program.id} style={{ marginBottom: '15px', padding: '10px', border: '1px solid #eee' }}>
+                                    <div>
+                                        <strong>{program.title}</strong>
+                                        <p>{program.summary}</p>
+                                    </div>
+                                    <div style={{ marginTop: '10px' }}>
+                                        <button 
+                                            onClick={() => programDetails(program.id)}
+                                            style={{ marginRight: '10px' }}
+                                        >
+                                            Details
+                                        </button>
+                                        <button 
+                                            onClick={() => startEditingProgram(program)}
+                                            style={{ marginRight: '10px' }}
+                                        >
+                                            Edit
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDeleteProgram(program.id)}
+                                            style={{ backgroundColor: '#dc3545', color: 'white' }}
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            ) : (
                 <div>
                     <h2>Courses</h2>
-                    <ul>
-                        {courses.map(course => (
-                            <li key={course.id} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #eee' }}>
-                                {editingCourse && editingCourse.id === course.id ? (
-                                    <form onSubmit={handleEditCourse}>
-                                        <div style={{ marginBottom: '10px' }}>
-                                            <input
-                                                type="text"
-                                                placeholder="Title"
-                                                value={editingCourse.title}
-                                                onChange={(e) => setEditingCourse({...editingCourse, title: e.target.value})}
-                                                required
-                                                style={{ width: '100%', padding: '5px' }}
-                                            />
-                                        </div>
-                                        <div style={{ marginBottom: '10px' }}>
-                                            <input
-                                                type="text"
-                                                placeholder="Code"
-                                                value={editingCourse.code}
-                                                onChange={(e) => setEditingCourse({...editingCourse, code: e.target.value})}
-                                                required
-                                                style={{ width: '100%', padding: '5px' }}
-                                            />
-                                        </div>
-                                        <div style={{ marginBottom: '10px' }}>
-                                            <input
-                                                type="number"
-                                                placeholder="Credits"
-                                                value={editingCourse.credit}
-                                                onChange={(e) => setEditingCourse({...editingCourse, credit: parseInt(e.target.value) || 0})}
-                                                required
-                                                min="0"
-                                                style={{ width: '100%', padding: '5px' }}
-                                            />
-                                        </div>
-                                        <div style={{ marginBottom: '10px' }}>
-                                            <textarea
-                                                placeholder="Summary"
-                                                value={editingCourse.summary || ''}
-                                                onChange={(e) => setEditingCourse({...editingCourse, summary: e.target.value})}
-                                                style={{ width: '100%', padding: '5px', minHeight: '60px' }}
-                                            />
-                                        </div>
-                                        <div style={{ marginBottom: '10px' }}>
-                                            <select
-                                                value={editingCourse.program}
-                                                onChange={(e) => setEditingCourse({...editingCourse, program: e.target.value})}
-                                                required
-                                                style={{ width: '100%', padding: '5px' }}
-                                            >
-                                                <option value="">Select Program</option>
-                                                {programs.map(program => (
-                                                    <option key={program.id} value={program.id}>
-                                                        {program.title}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div style={{ marginBottom: '10px' }}>
-                                            <select
-                                                value={editingCourse.level}
-                                                onChange={(e) => setEditingCourse({...editingCourse, level: e.target.value})}
-                                                required
-                                                style={{ width: '100%', padding: '5px' }}
-                                            >
-                                                <option value="">Select Level</option>
-                                                {levelOptions.map(level => (
-                                                    <option key={level} value={level}>
-                                                        {level}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div style={{ marginBottom: '10px' }}>
-                                            <select
-                                                value={editingCourse.year}
-                                                onChange={(e) => setEditingCourse({...editingCourse, year: parseInt(e.target.value)})}
-                                                required
-                                                style={{ width: '100%', padding: '5px' }}
-                                            >
-                                                <option value="">Select Year</option>
-                                                {yearOptions.map(year => (
-                                                    <option key={year} value={year}>
-                                                        {year}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div style={{ marginBottom: '10px' }}>
-                                            <select
-                                                value={editingCourse.semester}
-                                                onChange={(e) => setEditingCourse({...editingCourse, semester: e.target.value})}
-                                                required
-                                                style={{ width: '100%', padding: '5px' }}
-                                            >
-                                                <option value="">Select Semester</option>
-                                                {semesterOptions.map(semester => (
-                                                    <option key={semester} value={semester}>
-                                                        {semester}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div style={{ marginBottom: '10px' }}>
-                                            <label>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={editingCourse.is_elective}
-                                                    onChange={(e) => setEditingCourse({...editingCourse, is_elective: e.target.checked})}
-                                                    style={{ marginRight: '8px' }}
-                                                />
-                                                Is Elective Course
-                                            </label>
-                                        </div>
-                                        <button type="submit">Save</button>
-                                        <button 
-                                            type="button" 
-                                            onClick={cancelEditing}
-                                            style={{ marginLeft: '10px' }}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </form>
-                                ) : (
+                    {courses.length === 0 ? (
+                        <p>No courses found.</p>
+                    ) : (
+                        <ul>
+                            {courses.map(course => (
+                                <li key={course.id} style={{ marginBottom: '15px', padding: '10px', border: '1px solid #eee' }}>
                                     <div>
-                                        <strong>{course.title} ({course.code})</strong>
-                                        <div style={{ fontSize: '0.9em', color: '#666' }}>
-                                            <div>Credits: {course.credit}</div>
-                                            <div>Program: {course.program_name}</div>
-                                            <div>Level: {course.level} | Year: {course.year} | Semester: {course.semester}</div>
-                                            <div>Elective: {course.is_elective ? 'Yes' : 'No'}</div>
-                                            {course.summary && <div>Summary: {course.summary}</div>}
-                                        </div>
-                                        <div style={{ marginTop: '5px' }}>
-                                            <button onClick={() => courseDetails(course.slug)}>Details</button>
-                                            <button 
-                                                onClick={() => startEditingCourse(course)}
-                                                style={{ marginLeft: '5px' }}
-                                            >
-                                                Edit
-                                            </button>
-                                            <button 
-                                                onClick={() => handleDeleteCourse(course.slug, course.title)}
-                                                style={{ marginLeft: '5px', backgroundColor: '#ff4444', color: 'white' }}
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
+                                        <strong>{course.title}</strong> ({course.code})
+                                        <p>Credits: {course.credit} | Level: {course.level} | Year: {course.year} | Semester: {course.semester}</p>
+                                        <p>{course.summary}</p>
+                                        <p><em>{course.is_elective ? 'Elective Course' : 'Required Course'}</em></p>
                                     </div>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
-                    {courses.length === 0 && <p>No courses found.</p>}
+                                    <div style={{ marginTop: '10px' }}>
+                                        <button 
+                                            onClick={() => courseDetails(course.id)}
+                                            style={{ marginRight: '10px' }}
+                                        >
+                                            Details
+                                        </button>
+                                        <button 
+                                            onClick={() => startEditingCourse(course)}
+                                            style={{ marginRight: '10px' }}
+                                        >
+                                            Edit
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDeleteCourse(course.id, course.title)}
+                                            style={{ backgroundColor: '#dc3545', color: 'white' }}
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
             )}
             <CourseAllocations/>
@@ -1182,4 +1312,4 @@ const Courses = () => {
     );
 };
 
-export default Courses;
+export default Courses

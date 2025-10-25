@@ -15,8 +15,8 @@ function Form({ route, method }) {
     const checkRole = (res) =>{
         if (res.data.user.is_student == true){
             return "student"
-        }else if (res.data.user.is_teacher == true){
-            return "teacher"
+        }else if (res.data.user.is_lecturer == true){
+            return "lecturer"
         }else if (res.data.user.is_parent == true){
             return "parent"
         }else{

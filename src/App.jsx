@@ -11,7 +11,8 @@ import UserEdit from './pages/crud/UserEdit.jsx';
 import UserDetail from './pages/crud/UserDetail.jsx';
 import Courses from './pages/crud/Courses.jsx';
 import ManageSessions from './pages/crud/ManageSessions.jsx';
-
+import StudentEdit from './pages/crud/StudentEdit.jsx';
+import TeacherGradesPage from './pages/crud/teacher/TeacherGradesPage.jsx';
 
 function Logout() {
   localStorage.clear();
@@ -58,7 +59,7 @@ function App() {
         } />
         <Route path='/admin/student/:id' element={
           <ProtectedRoute>
-            <UserDetail role='student' />
+            <StudentEdit role='student' />
           </ProtectedRoute>
 
         } />
@@ -81,6 +82,7 @@ function App() {
           </ProtectedRoute>
 
         } />
+        <Route path="/teacher/grades/:allocationId" element={<ProtectedRoute><TeacherGradesPage /></ProtectedRoute>} />
         
         <Route path="/logout" element={<Logout />} />
         <Route path="*" element={<NotFound />}></Route>
