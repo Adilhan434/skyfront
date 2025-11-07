@@ -1,15 +1,21 @@
-import React from 'react'
+import React from "react";
 
 const AdminDashboard = () => {
-  const commonCardStyles = "rounded-xl p-8 shadow-lg transition-all duration-300 hover:shadow-xl"
-  const adminStyles = "bg-gradient-to-br from-purple-500 to-pink-600 text-white"
+  const commonCardStyles =
+    "rounded-xl p-8 shadow-lg transition-all duration-300 hover:shadow-xl";
+  const adminStyles =
+    "bg-gradient-to-br from-purple-500 to-pink-600 text-white";
 
   const CrudOperationsAdmin = [
-    {operation:'create lecturers', link:'/admin/create-lecturers'},   
-    {operation:'create students', link:'/admin/create-students'},   
-    {operation:'manage sessions', link:'/admin/sessions'},
-    {operation:'manage courses/programs/accolations', link:'/admin/courses'},
-  ]
+    { operation: "create lecturers", link: "/admin/create-lecturers" },
+    { operation: "create students", link: "/admin/create-students" },
+    { operation: "manage sessions", link: "/admin/sessions" },
+    {
+      operation: "manage courses/programs/accolations",
+      link: "/admin/courses",
+    },
+    { operation: "manage schedule", link: "/admin/schedule" },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
@@ -34,7 +40,9 @@ const AdminDashboard = () => {
               </span>
             </div>
             <h2 className="text-3xl font-bold mb-4">Admin Dashboard</h2>
-            <p className="text-purple-100 mb-6">Manage users, system settings, and overall platform administration</p>
+            <p className="text-purple-100 mb-6">
+              Manage users, system settings, and overall platform administration
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Админ статистика может быть добавлена здесь */}
             </div>
@@ -43,23 +51,56 @@ const AdminDashboard = () => {
 
         {/* Быстрые действия - ТОЛЬКО для админа */}
         <div className="max-w-4xl mx-auto mt-8">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h3>
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">
+            Quick Actions
+          </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {CrudOperationsAdmin.map((action, index) => (
-              <button key={index} className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 text-center">
+              <button
+                key={index}
+                className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 text-center"
+              >
                 <a href={action.link} className="flex flex-col items-center">
                   <div className="text-2xl mb-2">📚</div>
-                  <div className="font-medium text-gray-700">{action.operation}</div>
+                  <div className="font-medium text-gray-700">
+                    {action.operation}
+                  </div>
                 </a>
               </button>
             ))}
           </div>
         </div>
+
+        {/* Security Settings */}
+        <div className="max-w-4xl mx-auto mt-8">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">
+            Security Settings
+          </h3>
+          <div className="grid gap-4">
+            <a
+              href="/change-password"
+              className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-300 border border-slate-200 group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center text-white text-2xl group-hover:scale-110 transition-transform">
+                  🔒
+                </div>
+                <div>
+                  <div className="font-bold text-slate-800 text-lg">
+                    Change Password
+                  </div>
+                  <div className="text-slate-600 text-sm">
+                    Update your account password
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
       </div>
-                  <a href="/logout">logout</a>
-
+      <a href="/logout">logout</a>
     </div>
-  )
-}
+  );
+};
 
-export default AdminDashboard
+export default AdminDashboard;

@@ -1,57 +1,57 @@
 import { Navigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
 import api from "../api";
-import { REFRESH_TOKEN, ACCESS_TOKEN } from "../constants";
 import { useState, useEffect } from "react";
 
-
 function ProtectedRoute({ children }) {
-    const [isAuthorized, setIsAuthorized] = useState(null);
+  const [isAuthorized, setIsAuthorized] = useState(null);
+  const [isChecking, setIsChecking] = useState(true);
 
-    useEffect(() => {
-        auth().catch(() => setIsAuthorized(false))
-    }, [])
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
-    const refreshToken = async () => {
-        const refreshToken = localStorage.getItem(REFRESH_TOKEN);
-        try {
-            const res = await api.post("/accounts/token/refresh/", {
-                refresh: refreshToken,
-            });
-            if (res.status === 200) {
-                localStorage.setItem(ACCESS_TOKEN, res.data.access)
-                setIsAuthorized(true)
-            } else {
-                setIsAuthorized(false)
-            }
-        } catch (error) {
-            console.log(error);
-            setIsAuthorized(false);
-        }
-    };
+  const checkAuth = async () => {
+    try {
+      // Try to access a protected endpoint
+      // The cookies will be sent automatically
+      const response = await api.get("/accounts/profile/");
 
-    const auth = async () => {
-        const token = localStorage.getItem(ACCESS_TOKEN);
-        if (!token) {
-            setIsAuthorized(false);
-            return;
-        }
-        const decoded = jwtDecode(token);
-        const tokenExpiration = decoded.exp;
-        const now = Date.now() / 1000;
+      if (response.status === 200) {
+        console.log("✅ User is authorized");
+        setIsAuthorized(true);
+      } else {
+        setIsAuthorized(false);
+      }
+    } catch (error) {
+      console.log("❌ Authorization check failed:", error);
 
-        if (tokenExpiration < now) {
-            await refreshToken();
-        } else {
-            setIsAuthorized(true);
-        }
-    };
-
-    if (isAuthorized === null) {
-        return <div>Loading...</div>;
+      // If we get 401, tokens might be expired
+      // The api interceptor will try to refresh automatically
+      if (error.response?.status === 401) {
+        setIsAuthorized(false);
+      } else {
+        // Other errors, consider unauthorized
+        setIsAuthorized(false);
+      }
+    } finally {
+      setIsChecking(false);
     }
+  };
 
-    return isAuthorized ? children : <Navigate to="/login" />;
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="text-lg text-gray-600 font-medium">
+            Checking authorization...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return isAuthorized ? children : <Navigate to="/login" />;
 }
 
 export default ProtectedRoute;

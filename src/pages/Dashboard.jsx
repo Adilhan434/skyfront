@@ -1,14 +1,31 @@
 import React from 'react'
-import { ROLE } from '../constants'
 import AdminDashboard from './users/admin.jsx'
 import TeacherDashboard from './users/teacher.jsx'
 import StudentDashboard from './users/student.jsx'
+import { useAuth } from '../hooks/useAuth'
 
 const Dashboard = () => {
-  const currentRole = localStorage.getItem(ROLE)
+  const { loading, role } = useAuth()
+
+  // Debug logging
+  console.log("📊 Dashboard - Loading:", loading, "Role:", role);
+
+  // Показываем loading пока определяем роль
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="text-lg text-gray-600 font-medium">
+            Loading dashboard...
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Рендерим соответствующий дашборд в зависимости от роли
-  switch (currentRole) {
+  switch (role) {
     case 'admin':
       return <AdminDashboard />
     case 'lecturer':
