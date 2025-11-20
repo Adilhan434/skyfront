@@ -32,8 +32,12 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // If 401 and we haven't retried yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // If 401 and we haven't retried yet AND it's not the refresh endpoint itself
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url.includes("/token/refresh/")
+    ) {
       originalRequest._retry = true;
 
       try {
@@ -50,6 +54,16 @@ api.interceptors.response.use(
         window.location.href = "/login";
         return Promise.reject(refreshError);
       }
+    }
+
+    // If refresh endpoint itself returns 401, redirect to login
+    if (
+      error.response?.status === 401 &&
+      originalRequest.url.includes("/token/refresh/")
+    ) {
+      console.log("❌ Refresh token invalid or expired, redirecting to login");
+      window.location.href = "/login";
+      return Promise.reject(error);
     }
 
     if (error.response) {

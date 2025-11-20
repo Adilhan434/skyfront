@@ -6,15 +6,15 @@ const AdminSchedule = () => {
   const [schedules, setSchedules] = useState([]);
   const [courses, setCourses] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [lessonTimes, setLessonTimes] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [formData, setFormData] = useState({
     course: "",
     group: "",
-    order: 1,
+    lesson_time: "",
     day: "Monday",
-    start: "09:00",
-    end: "10:30",
+    date: "",
   });
 
   const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
@@ -27,12 +27,12 @@ const AdminSchedule = () => {
     setLoading(true);
     try {
       // Загружаем расписание
-      const schedulesRes = await api.get("attendance/schedules/");
+      const schedulesRes = await api.get("/attendance/schedules/");
       console.log("Schedules loaded:", schedulesRes.data);
       setSchedules(schedulesRes.data);
 
       // Загружаем курсы - используем правильный endpoint
-      const coursesRes = await api.get("programs/api/course/");
+      const coursesRes = await api.get("/programs/api/course/");
       console.log("Courses loaded:", coursesRes.data);
       // Проверяем формат данных
       const coursesData = Array.isArray(coursesRes.data)
@@ -41,13 +41,21 @@ const AdminSchedule = () => {
       setCourses(coursesData);
 
       // Загружаем группы - используем правильный endpoint
-      const groupsRes = await api.get("accounts/api/groups/");
+      const groupsRes = await api.get("/accounts/api/groups/");
       console.log("Groups loaded:", groupsRes.data);
       // Проверяем формат данных
       const groupsData = Array.isArray(groupsRes.data)
         ? groupsRes.data
         : groupsRes.data.results || [];
       setGroups(groupsData);
+
+      // Загружаем времена уроков
+      const lessonTimesRes = await api.get("/attendance/lesson-times/");
+      console.log("Lesson times loaded:", lessonTimesRes.data);
+      const lessonTimesData = Array.isArray(lessonTimesRes.data)
+        ? lessonTimesRes.data
+        : lessonTimesRes.data.results || [];
+      setLessonTimes(lessonTimesData);
     } catch (error) {
       console.error("Error loading data:", error);
       console.error("Error details:", error.response?.data);
@@ -67,20 +75,18 @@ const AdminSchedule = () => {
       setFormData({
         course: schedule.course,
         group: schedule.group,
-        order: schedule.order,
+        lesson_time: schedule.lesson_time || "",
         day: schedule.day,
-        start: schedule.start.substring(0, 5), // HH:MM
-        end: schedule.end.substring(0, 5),
+        date: schedule.date || "",
       });
     } else {
       setEditingSchedule(null);
       setFormData({
         course: "",
         group: "",
-        order: 1,
+        lesson_time: "",
         day: "Monday",
-        start: "09:00",
-        end: "10:30",
+        date: "",
       });
     }
     setShowModal(true);
@@ -104,27 +110,34 @@ const AdminSchedule = () => {
 
     try {
       const data = {
-        ...formData,
         course: parseInt(formData.course),
         group: parseInt(formData.group),
-        order: parseInt(formData.order),
-        start: formData.start + ":00", // HH:MM:SS
-        end: formData.end + ":00",
+        day: formData.day,
       };
+
+      // Добавляем lesson_time если выбран
+      if (formData.lesson_time) {
+        data.lesson_time = parseInt(formData.lesson_time);
+      }
+
+      // Добавляем date если указан
+      if (formData.date) {
+        data.date = formData.date;
+      }
 
       console.log("Submitting schedule data:", data);
 
       if (editingSchedule) {
         // Обновление
         const response = await api.put(
-          `attendance/schedules/${editingSchedule.id}/`,
+          `/attendance/schedules/${editingSchedule.id}/`,
           data
         );
         console.log("Update response:", response.data);
         alert("Расписание успешно обновлено!");
       } else {
         // Создание
-        const response = await api.post("attendance/schedules/", data);
+        const response = await api.post("/attendance/schedules/", data);
         console.log("Create response:", response.data);
         alert("Расписание успешно создано!");
       }
@@ -162,7 +175,7 @@ const AdminSchedule = () => {
     }
 
     try {
-      await api.delete(`attendance/schedules/${scheduleId}/`);
+      await api.delete(`/attendance/schedules/${scheduleId}/`);
       console.log("Schedule deleted:", scheduleId);
       alert("Расписание успешно удалено!");
       fetchAllData();
@@ -284,14 +297,23 @@ const AdminSchedule = () => {
                             <span className="font-medium">Группа:</span>{" "}
                             {schedule.group_name}
                           </div>
-                          <div className="text-sm text-gray-600">
-                            <span className="font-medium">Время:</span>{" "}
-                            {schedule.start} - {schedule.end}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            <span className="font-medium">Порядок:</span>{" "}
-                            {schedule.order}
-                          </div>
+                          {schedule.start_time && schedule.end_time && (
+                            <div className="text-sm text-gray-600">
+                              <span className="font-medium">Время:</span>{" "}
+                              {schedule.start_time} - {schedule.end_time}
+                              {schedule.lesson_order && (
+                                <span className="ml-2 bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
+                                  Урок {schedule.lesson_order}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {schedule.schedule_date && (
+                            <div className="text-sm text-gray-600">
+                              <span className="font-medium">Дата:</span>{" "}
+                              {new Date(schedule.schedule_date).toLocaleDateString('ru-RU')}
+                            </div>
+                          )}
                         </div>
                         <div className="flex gap-2">
                           <button
@@ -334,6 +356,14 @@ const AdminSchedule = () => {
               {groups.length === 0 && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
                   ⚠️ Группы не загружены. Проверьте консоль для деталей.
+                </div>
+              )}
+              {lessonTimes.length === 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                  💡 Создайте времена уроков в разделе{" "}
+                  <a href="/admin/lesson-times" className="underline font-semibold">
+                    Управление временами уроков
+                  </a>
                 </div>
               )}
 
@@ -408,46 +438,42 @@ const AdminSchedule = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Порядковый номер
+                  Время урока {lessonTimes.length > 0 && `(${lessonTimes.length} доступно)`}
                 </label>
-                <input
-                  type="number"
-                  name="order"
-                  value={formData.order}
+                <select
+                  name="lesson_time"
+                  value={formData.lesson_time}
                   onChange={handleInputChange}
-                  min="1"
-                  required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
+                >
+                  <option value="">Не выбрано</option>
+                  {lessonTimes
+                    .sort((a, b) => a.order - b.order)
+                    .map((lt) => (
+                      <option key={lt.id} value={lt.id}>
+                        Урок {lt.order}: {lt.start_time.slice(0, 5)} - {lt.end_time.slice(0, 5)}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Опционально. Время урока определяет начало и конец занятия.
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Начало
-                  </label>
-                  <input
-                    type="time"
-                    name="start"
-                    value={formData.start}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Конец
-                  </label>
-                  <input
-                    type="time"
-                    name="end"
-                    value={formData.end}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Дата урока
+                </label>
+                <input
+                  type="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Опционально. Укажите конкретную дату урока.
+                </p>
               </div>
 
               <div className="flex gap-3 mt-6">

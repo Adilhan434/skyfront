@@ -21,6 +21,7 @@ import TeacherGradesPage from "./pages/crud/teacher/TeacherGradesPage.jsx";
 import TeacherAttendance from "./pages/users/TeacherAttendance.jsx";
 import StudentAttendance from "./pages/users/StudentAttendance.jsx";
 import AdminSchedule from "./pages/crud/AdminSchedule.jsx";
+import LessonTimes from "./pages/crud/LessonTimes.jsx";
 import ChangePassword from "./componenets/ChangePassword.jsx";
 import api from "./api";
 
@@ -160,6 +161,14 @@ function App() {
           element={
             <ProtectedRoute>
               <AdminSchedule />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/lesson-times"
+          element={
+            <ProtectedRoute>
+              <LessonTimes />
             </ProtectedRoute>
           }
         />

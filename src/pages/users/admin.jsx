@@ -15,6 +15,7 @@ const AdminDashboard = () => {
       link: "/admin/courses",
     },
     { operation: "manage schedule", link: "/admin/schedule" },
+    { operation: "manage lesson times", link: "/admin/lesson-times" },
   ];
 
   return (
